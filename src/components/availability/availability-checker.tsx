@@ -121,11 +121,11 @@ export default function AvailabilityChecker() {
                 </div>}
                 {result.createdDate && <div>
                   <h4 className="font-semibold text-sm">Created Date</h4>
-                  <p className="text-muted-foreground">{result.createdDate}</p>
+                  <p className="text-muted-foreground">{new Date(result.createdDate).toLocaleDateString()}</p>
                 </div>}
                 {result.expiryDate && <div>
                   <h4 className="font-semibold text-sm">Expiry Date</h4>
-                  <p className="text-muted-foreground">{result.expiryDate}</p>
+                  <p className="text-muted-foreground">{new Date(result.expiryDate).toLocaleDateString()}</p>
                 </div>}
                 {result.nameServers && result.nameServers.length > 0 && <div>
                   <h4 className="font-semibold text-sm">Name Servers</h4>
