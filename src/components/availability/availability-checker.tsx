@@ -12,15 +12,35 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Server, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import type { DomainAvailability } from '@/lib/types';
 import { Badge } from '../ui/badge';
+import { useToast } from '@/hooks/use-toast';
 
 const availabilitySchema = z.object({
   domain: z.string().min(3, "Domain must be at least 3 characters").refine(val => val.includes('.'), "Please enter a valid domain name."),
 });
 
+async function fetchJSON<JSON = any>(
+    input: RequestInfo,
+    init?: RequestInit
+  ): Promise<JSON> {
+    const response = await fetch(input, init);
+  
+    if (!response.ok) {
+        let errorBody;
+        try {
+            errorBody = await response.json();
+        } catch (e) {
+            // ignore
+        }
+      throw new Error(errorBody?.error || response.statusText);
+    }
+  
+    return response.json();
+}
+
 export default function AvailabilityChecker() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<DomainAvailability | null>(null);
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof availabilitySchema>>({
     resolver: zodResolver(availabilitySchema),
@@ -31,32 +51,17 @@ export default function AvailabilityChecker() {
 
   const onSubmit = async (data: z.infer<typeof availabilitySchema>) => {
     setLoading(true);
-    setError(null);
     setResult(null);
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    if (data.domain.includes('error')) {
-      setError('Failed to check domain availability. Please try again later.');
-    } else if (data.domain.includes('taken')) {
-      setResult({
-        status: 'taken',
-        registrar: 'GoDaddy',
-        createdDate: '2020-01-15',
-        expiryDate: '2025-01-15',
-        nameServers: ['ns1.godaddy.com', 'ns2.godaddy.com'],
-        notes: 'This domain is currently registered and not available.'
-      });
-    } else if (data.domain.includes('unknown')) {
-      setResult({
-        status: 'unknown',
-        notes: 'Could not determine availability for this TLD. The registry might be down or not supported.'
-      });
-    } else {
-      setResult({
-        status: 'available',
-        notes: 'Congratulations! This domain appears to be available for registration.'
-      });
+    try {
+        const availabilityResult = await fetchJSON<DomainAvailability>(`/api/availability?domain=${data.domain}`);
+        setResult(availabilityResult);
+    } catch (e: any) {
+        toast({
+            variant: "destructive",
+            title: "Error checking availability",
+            description: e.message || "Could not check domain availability. Please try again later."
+        });
     }
 
     setLoading(false);
@@ -90,19 +95,11 @@ export default function AvailabilityChecker() {
         </CardContent>
       </Card>
 
-      {error && (
-        <Alert variant="destructive" className="mt-6">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
       {result && (
         <Card className="mt-6">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Availability Result</span>
+              <span>Availability Result for <span className='font-bold'>{result.domain}</span></span>
               {result.status === 'available' && <Badge variant="default" className="bg-green-500 hover:bg-green-600">Available</Badge>}
               {result.status === 'taken' && <Badge variant="destructive">Taken</Badge>}
               {result.status === 'unknown' && <Badge variant="secondary">Unknown</Badge>}
@@ -115,30 +112,30 @@ export default function AvailabilityChecker() {
               {result.status === 'unknown' && <AlertTriangle className="h-6 w-6 text-yellow-500" />}
               <span>{form.getValues('domain')}</span>
             </div>
-            {result.notes && <p className="text-muted-foreground">{result.notes}</p>}
             
             {result.status === 'taken' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t">
-                <div>
+                {result.registrar && <div>
                   <h4 className="font-semibold text-sm">Registrar</h4>
                   <p className="text-muted-foreground">{result.registrar}</p>
-                </div>
-                <div>
+                </div>}
+                {result.createdDate && <div>
                   <h4 className="font-semibold text-sm">Created Date</h4>
                   <p className="text-muted-foreground">{result.createdDate}</p>
-                </div>
-                <div>
+                </div>}
+                {result.expiryDate && <div>
                   <h4 className="font-semibold text-sm">Expiry Date</h4>
                   <p className="text-muted-foreground">{result.expiryDate}</p>
-                </div>
-                <div>
+                </div>}
+                {result.nameServers && result.nameServers.length > 0 && <div>
                   <h4 className="font-semibold text-sm">Name Servers</h4>
                   <ul className="text-muted-foreground list-disc pl-5">
                     {result.nameServers?.map(ns => <li key={ns}>{ns}</li>)}
                   </ul>
-                </div>
+                </div>}
               </div>
             )}
+             {result.notes && <p className="text-muted-foreground">{result.notes}</p>}
           </CardContent>
           {result.status === 'available' && (
             <CardFooter>

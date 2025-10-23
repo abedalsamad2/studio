@@ -1,10 +1,12 @@
 export type DomainAvailability = {
+  domain: string;
   status: 'available' | 'taken' | 'unknown';
   registrar?: string;
   createdDate?: string;
   expiryDate?: string;
   nameServers?: string[];
   notes?: string;
+  source?: 'RDAP' | 'WHOIS';
 };
 
 export type KeywordData = {
