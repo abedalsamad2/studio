@@ -14,3 +14,13 @@ export type KeywordData = {
   competition: number;
   source: 'Google Ads' | 'Google Trends';
 };
+
+export type TrademarkResult = {
+  mark: string;
+  status: 'LIVE' | 'DEAD';
+  classes: string[];
+  owner: string;
+  filingDate: string;
+  serialNumber: string;
+  source: 'USPTO';
+};

@@ -1,5 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Copyright } from "lucide-react";
+import TrademarkChecker from '@/components/trademarks/trademark-checker';
 
 export default function TrademarksPage() {
   return (
@@ -12,19 +11,12 @@ export default function TrademarksPage() {
             Check for potential trademark conflicts.
             </p>
         </div>
-        <Card className="mt-8">
-        <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-            <Copyright className="h-6 w-6 text-primary" />
-            Coming Soon
-            </CardTitle>
-        </CardHeader>
-        <CardContent>
-            <p className="text-muted-foreground">
-            A tool to help you check for trademark conflicts is on its way. Please consult a legal professional for advice.
-            </p>
-        </CardContent>
-        </Card>
+        <div className="mt-8">
+            <TrademarkChecker />
+        </div>
+        <p className="mt-4 text-sm text-muted-foreground">
+          Disclaimer: Not legal advice. Search is limited to the selected jurisdiction.
+        </p>
     </section>
   );
 }
