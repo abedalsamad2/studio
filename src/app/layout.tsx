@@ -1,3 +1,5 @@
+import Footer from '@/components/layout/footer';
+import Header from '@/components/layout/header';
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
@@ -23,7 +25,15 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        {children}
+        <div className="flex min-h-screen flex-col">
+          <Header />
+          <main className="flex-1 bg-muted/20">
+            <div className="container relative py-6 lg:py-10">
+              {children}
+            </div>
+          </main>
+          <Footer />
+        </div>
         <Toaster />
       </body>
     </html>

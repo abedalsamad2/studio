@@ -32,6 +32,8 @@ const navItems = [
 export default function Header() {
   const pathname = usePathname();
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
+  const mainNavItems = navItems.filter(item => ['/', '/availability', '/keywords', '/trademarks'].includes(item.href));
+
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -44,7 +46,7 @@ export default function Header() {
             </span>
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
-            {navItems.map((item) => (
+            {mainNavItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -75,7 +77,7 @@ export default function Header() {
             </Link>
             <div className="my-4 h-[calc(100vh-8rem)] pb-10 pl-6">
               <div className="flex flex-col space-y-3">
-                {navItems.map((item) => (
+                {mainNavItems.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
