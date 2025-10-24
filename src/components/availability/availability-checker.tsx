@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -41,20 +41,24 @@ export default function AvailabilityChecker() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<DomainAvailability | null>(null);
   const { toast } = useToast();
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const form = useForm<z.infer<typeof availabilitySchema>>({
     resolver: zodResolver(availabilitySchema),
     defaultValues: {
       domain: '',
     },
+    mode: 'onChange',
   });
 
-  const onSubmit = async (data: z.infer<typeof availabilitySchema>) => {
+  const domainValue = form.watch('domain');
+
+  const triggerSearch = async (domain: string) => {
     setLoading(true);
     setResult(null);
 
     try {
-        const availabilityResult = await fetchJSON<DomainAvailability>(`/api/availability?domain=${data.domain}`);
+        const availabilityResult = await fetchJSON<DomainAvailability>(`/api/availability?domain=${domain}`);
         setResult(availabilityResult);
     } catch (e: any) {
         toast({
@@ -66,13 +70,37 @@ export default function AvailabilityChecker() {
 
     setLoading(false);
   };
+  
+  useEffect(() => {
+    if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+    }
+
+    const isDomainValid = availabilitySchema.shape.domain.safeParse(domainValue).success;
+
+    if (domainValue && isDomainValid) {
+        debounceTimeout.current = setTimeout(() => {
+            triggerSearch(domainValue);
+        }, 500); // 500ms debounce delay
+    } else {
+        setResult(null); // Clear results if input is invalid or empty
+    }
+
+    return () => {
+        if (debounceTimeout.current) {
+            clearTimeout(debounceTimeout.current);
+        }
+    };
+  }, [domainValue]);
+
+
 
   return (
     <>
       <Card>
         <CardContent className="pt-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col sm:flex-row items-start gap-4">
+            <form onSubmit={(e) => e.preventDefault()} className="flex flex-col sm:flex-row items-start gap-4">
               <FormField
                 control={form.control}
                 name="domain"
@@ -80,16 +108,15 @@ export default function AvailabilityChecker() {
                   <FormItem className="w-full">
                     <FormLabel className="sr-only">Domain Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="example.com" {...field} className="text-base" />
+                      <div className="relative">
+                        <Input placeholder="example.com" {...field} className="text-base pr-10" />
+                        {loading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" disabled={loading} className="w-full sm:w-auto flex-shrink-0">
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Check Availability
-              </Button>
             </form>
           </Form>
         </CardContent>
