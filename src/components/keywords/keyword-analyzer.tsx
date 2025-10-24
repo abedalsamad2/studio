@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, AlertTriangle, Wand2, BrainCircuit } from 'lucide-react';
@@ -18,6 +18,7 @@ import type { KeywordData } from '@/lib/types';
 import { locales } from '@/lib/locales';
 import { keywordInsightsWithLLM } from '@/ai/flows/keyword-insights-with-llm';
 import { useToast } from '@/hooks/use-toast';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const keywordSchema = z.object({
   keyword: z.string().min(2, "Keyword must be at least 2 characters"),
@@ -39,7 +40,12 @@ const mockAdsData: KeywordData[] = [
     { term: 'short domain names', searchVolume: 25000, cpc: 3.80, competition: 0.96, source: 'Google Ads' },
 ];
 
-export default function KeywordAnalyzer() {
+type KeywordAnalyzerProps = {
+    keyword?: string;
+    showInput?: boolean;
+};
+
+export default function KeywordAnalyzer({ keyword, showInput = true }: KeywordAnalyzerProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<KeywordData[] | null>(null);
@@ -71,6 +77,13 @@ export default function KeywordAnalyzer() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (keyword) {
+      form.setValue('keyword', keyword);
+      onSubmit({ ...form.getValues(), keyword });
+    }
+  }, [keyword]);
   
   const handleGetInsights = (keywordData: KeywordData) => {
     setAiInsight(null);
@@ -97,70 +110,72 @@ export default function KeywordAnalyzer() {
 
   return (
     <>
-      <Card>
-        <CardContent className="pt-6">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="keyword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Seed Keyword</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., ai tools" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="locale"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Locale</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+      {showInput && (
+        <Card>
+          <CardContent className="pt-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="keyword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Seed Keyword</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a locale" />
-                          </SelectTrigger>
+                          <Input placeholder="e.g., ai tools" {...field} />
                         </FormControl>
-                        <SelectContent>
-                          {locales.map(locale => (
-                            <SelectItem key={locale.value} value={locale.value}>{locale.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="locale"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Locale</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a locale" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {locales.map(locale => (
+                              <SelectItem key={locale.value} value={locale.value}>{locale.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="useGoogleAds"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                      <div className="space-y-0.5">
+                        <FormLabel>Use Google Ads</FormLabel>
+                        <FormMessage />
+                      </div>
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
                     </FormItem>
                   )}
                 />
-              </div>
-              <FormField
-                control={form.control}
-                name="useGoogleAds"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                    <div className="space-y-0.5">
-                      <FormLabel>Use Google Ads</FormLabel>
-                      <FormMessage />
-                    </div>
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" disabled={loading} className="w-full sm:w-auto">
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Analyze Keywords
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+                <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Analyze Keywords
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      )}
 
       {error && (
         <Alert variant="destructive" className="mt-6">
@@ -170,47 +185,71 @@ export default function KeywordAnalyzer() {
         </Alert>
       )}
 
-      {results && (
-        <Card className="mt-6">
-          <CardContent className="pt-6">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Term</TableHead>
-                  <TableHead className="text-right">Search Volume</TableHead>
-                  <TableHead className="text-right">CPC</TableHead>
-                  <TableHead className="text-right">Competition</TableHead>
-                  <TableHead className="text-center">Source</TableHead>
-                  <TableHead className="text-right"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {results.map((row) => (
-                  <TableRow key={row.term}>
-                    <TableCell className="font-medium">{row.term}</TableCell>
-                    <TableCell className="text-right">{row.searchVolume.toLocaleString()}</TableCell>
-                    <TableCell className="text-right">${row.cpc.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">{(row.competition * 100).toFixed(0)}%</TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant={row.source === 'Google Ads' ? 'default' : 'secondary'}>
-                        {row.source === 'Google Ads' ? 'Accurate' : 'Relative'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => handleGetInsights(row)} disabled={isPending}>
-                            <Wand2 className="h-4 w-4 mr-2" />
-                            Get AI Insights
-                        </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+        <AnimatePresence>
+            {(loading || results) && (
+                 <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                >
+                <Card className={showInput ? "mt-6" : ""}>
+                    <CardHeader>
+                        <CardTitle>Keyword Analysis</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                    {loading && !results && (
+                         <div className="flex items-center justify-center p-8">
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                         </div>
+                    )}
+                    {results && (
+                        <Table>
+                        <TableHeader>
+                            <TableRow>
+                            <TableHead>Term</TableHead>
+                            <TableHead className="text-right">Search Volume</TableHead>
+                            <TableHead className="text-right">CPC</TableHead>
+                            <TableHead className="text-right">Competition</TableHead>
+                            <TableHead className="text-center">Source</TableHead>
+                            <TableHead className="text-right"></TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {results.map((row) => (
+                            <TableRow key={row.term}>
+                                <TableCell className="font-medium">{row.term}</TableCell>
+                                <TableCell className="text-right">{row.searchVolume.toLocaleString()}</TableCell>
+                                <TableCell className="text-right">${row.cpc.toFixed(2)}</TableCell>
+                                <TableCell className="text-right">{(row.competition * 100).toFixed(0)}%</TableCell>
+                                <TableCell className="text-center">
+                                <Badge variant={row.source === 'Google Ads' ? 'default' : 'secondary'}>
+                                    {row.source === 'Google Ads' ? 'Accurate' : 'Relative'}
+                                </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <Button variant="ghost" size="sm" onClick={() => handleGetInsights(row)} disabled={isPending}>
+                                        <Wand2 className="h-4 w-4 mr-2" />
+                                        Get AI Insights
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                            ))}
+                        </TableBody>
+                        </Table>
+                    )}
+                    </CardContent>
+                </Card>
+            </motion.div>
+            )}
+        </AnimatePresence>
       
+      <AnimatePresence>
       {(isPending || aiInsight) && (
+        <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+        >
         <Alert className="mt-6">
             <BrainCircuit className="h-4 w-4" />
             <AlertTitle>AI-Powered Insights</AlertTitle>
@@ -219,7 +258,9 @@ export default function KeywordAnalyzer() {
                 {aiInsight}
             </AlertDescription>
         </Alert>
+        </motion.div>
       )}
+      </AnimatePresence>
 
     </>
   );

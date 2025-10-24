@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
 
-export default function HomePage() {
-  redirect('/availability');
+export default function RootPage() {
+  redirect('/?home=true');
 }

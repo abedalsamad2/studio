@@ -11,6 +11,7 @@ import {
   Link2,
   Menu,
   Sparkles,
+  Home
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ import { cn } from '@/lib/utils';
 import React from 'react';
 
 const navItems = [
+  { href: '/', label: 'Home', icon: Home },
   { href: '/availability', label: 'Availability', icon: Globe },
   { href: '/keywords', label: 'Keywords', icon: Key },
   { href: '/backlinks', label: 'Backlinks', icon: Link2 },
