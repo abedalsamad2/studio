@@ -152,7 +152,7 @@ export default function HomePage() {
                                 <DollarSign className="h-6 w-6 text-primary" />
                                 Valuation Estimator
                             </CardTitle>
-                        </Header>
+                        </CardHeader>
                         <CardContent>
                             <p className="text-muted-foreground">
                                 Our domain valuation estimator is under development. Check back soon for updates!
@@ -168,7 +168,7 @@ export default function HomePage() {
                             <Sparkles className="h-6 w-6 text-primary" />
                             Domain Generator
                             </CardTitle>
-                        </Header>
+                        </CardHeader>
                         <CardContent>
                             <p className="text-muted-foreground">
                                 Our AI-powered domain name generator is being built. Get ready for creative ideas!
