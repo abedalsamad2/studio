@@ -47,6 +47,7 @@ export default function AvailabilityChecker({ domain, showInput = true }: Availa
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<DomainAvailability | null>(null);
   const { toast } = useToast();
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
   
   const form = useForm<z.infer<typeof availabilitySchema>>({
     resolver: zodResolver(availabilitySchema),
@@ -55,6 +56,8 @@ export default function AvailabilityChecker({ domain, showInput = true }: Availa
     },
     mode: 'onChange',
   });
+
+  const domainValue = form.watch('domain');
 
   const triggerSearch = async (searchDomain: string) => {
     if (!searchDomain || !availabilitySchema.shape.domain.safeParse(searchDomain).success) {
@@ -82,10 +85,34 @@ export default function AvailabilityChecker({ domain, showInput = true }: Availa
   
   useEffect(() => {
     if (domain) {
-      form.setValue('domain', domain);
-      triggerSearch(domain);
+      form.setValue('domain', domain, { shouldValidate: true });
     }
-  }, [domain]);
+  }, [domain, form]);
+  
+  useEffect(() => {
+    if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+    }
+
+    if (showInput) { // only run auto-search if the input is visible on the page
+        const isDomainValid = availabilitySchema.shape.domain.safeParse(domainValue).success;
+
+        if (domainValue && isDomainValid) {
+            debounceTimeout.current = setTimeout(() => {
+                triggerSearch(domainValue);
+            }, 500); // 500ms debounce
+        } else {
+           setResult(null);
+        }
+    }
+
+
+    return () => {
+        if (debounceTimeout.current) {
+            clearTimeout(debounceTimeout.current);
+        }
+    };
+  }, [domainValue, showInput]);
 
 
   return (
@@ -97,7 +124,7 @@ export default function AvailabilityChecker({ domain, showInput = true }: Availa
             </CardHeader>
             <CardContent>
             <Form {...form}>
-                <form onSubmit={(e) => { e.preventDefault(); triggerSearch(form.getValues('domain'))}} className="flex flex-col sm:flex-row items-start gap-4">
+                <form onSubmit={(e) => { e.preventDefault(); if (availabilitySchema.shape.domain.safeParse(form.getValues('domain')).success) triggerSearch(form.getValues('domain'))}} className="flex flex-col sm:flex-row items-start gap-4">
                 <FormField
                     control={form.control}
                     name="domain"
@@ -171,7 +198,7 @@ export default function AvailabilityChecker({ domain, showInput = true }: Availa
                       <p className="text-muted-foreground">{new Date(result.expiryDate).toLocaleDateString()}</p>
                     </div>}
                     {result.nameServers && result.nameServers.length > 0 && <div>
-                      <h4-semibold text-sm">Name Servers</h4-semibold>
+                      <h4-semibold text-sm>Name Servers</h4-semibold>
                       <ul className="text-muted-foreground list-disc pl-5">
                         {result.nameServers?.map(ns => <li key={ns}>{ns}</li>)}
                       </ul>
